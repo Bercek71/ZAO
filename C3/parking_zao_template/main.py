@@ -68,6 +68,83 @@ def four_point_transform(image, one_c):
     # return the warped image
     return warped
 
+def getAccuracy(values, results):
+    # Open file
+    file = open(results, 'r')
+    lines = file.readlines()
+    # Get values
+    # values = [int(x) for x in values]
+    res = [int(x) for x in lines]
+    # Compare values and results
+    correctCounter = 0
+    for i in range(len(values)):
+        if values[i] == res[i]:
+            correctCounter += 1
+        
+    print(f"Accuracy: {correctCounter/len(values)}")
+
+
+
+def f1_score_binary(values, results):
+    file = open(results, 'r')
+    lines = file.readlines()
+    # Get values
+    # values = [int(x) for x in values]
+    res = [int(x) for x in lines]
+    true_positives = 0
+    false_positives = 0
+    false_negatives = 0
+    for i in range(len(values)):
+        if values[i] == res[i]:
+            if values[i] == 1:
+                true_positives += 1
+        else:
+            if values[i] == 0 and res[i] == 1:
+                false_negatives += 1
+            elif values[i] == 1 and res[i] == 0:
+                false_positives += 1
+
+    if true_positives == 0:
+        print(f"Precision F-score: Undefined")
+        return
+    precision = true_positives / (true_positives + false_positives)
+    recall = true_positives / (true_positives + false_negatives)
+    
+    if precision + recall == 0:
+        return 0
+    fScore = 2 * (precision * recall) / (precision + recall)
+
+    print(f"Precision F-score: {precision}")
+
+
+import numpy as np
+
+def template_matching_sqdiff_normed(image, template):
+    # Get dimensions of the image and template
+    ih, iw = image.shape[:2]
+    th, tw = template.shape[:2]
+
+    # Create a result matrix to store the matching scores
+    result = np.zeros((ih - th + 1, iw - tw + 1), dtype=np.float32)
+
+    # Iterate over the image and perform template matching
+    for y in range(ih - th + 1):
+        for x in range(iw - tw + 1):
+            # Extract the region of interest from the image
+            roi = image[y:y+th, x:x+tw]
+
+            # Calculate squared difference between the template and roi
+            diff = (roi - template) ** 2
+
+            # Calculate the normalized squared difference
+            normed_score = np.sum(diff) / (th * tw)
+
+            # Store the result in the result matrix
+            result[y, x] = normed_score
+
+    return result
+
+
 
 def main(argv):
 
@@ -80,7 +157,10 @@ def main(argv):
         sp_line = list(st_line.split(" "))
         pkm_coordinates.append(sp_line)
 
-    test_images = [img for img in glob.glob("test_images_zao/*.jpg")]
+    test_images = [(img, img.replace(".jpg", ".txt")) for img in glob.glob("test_images_zao/*.jpg")]
+    print(test_images)
+    test_results = [img for img in glob.glob("test_images_zao/*.txt")]
+    test_results.sort()
     test_images.sort()
     print(pkm_coordinates)
     print("********************************************************")
@@ -97,9 +177,11 @@ def main(argv):
     cv.namedWindow(window5, cv.WINDOW_NORMAL)
     window6 = "Matching Image"
     cv.namedWindow(window6, cv.WINDOW_NORMAL)
+    window7 = "Matching Horizontal Image"
+    cv.namedWindow(window7, cv.WINDOW_NORMAL)
     parking_classificator = []
 
-    for img_name in test_images:
+    for img_name, result_name in test_images:
         print(img_name)
         image = cv.imread(img_name, cv.IMREAD_COLOR)
         image_blackandWhite = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
@@ -126,47 +208,55 @@ def main(argv):
 
             template = cv.imread('templates/template9.png', 0)
             template = cv.resize(template, (5, 45))
-            matchingResult = cv.matchTemplate(matchingDiletate, template, cv.TM_SQDIFF_NORMED)
-            min_val, max_val, min_loc, max_loc = cv.minMaxLoc(matchingResult)
+            matchingResult = cv.matchTemplate(matchingDiletate, template, cv.TM_SQDIFF_NORMED)            
+            cv.imshow(window7, matchingResult)
+            # min_val = np.min(matchingResult)
+            min_val = np.min(matchingResult)
             templateHorizontal = cv.imread('templates/template10.png', 0)
             templateHorizontal = cv.resize(templateHorizontal, (45, 30))
             horizontalResult = cv.matchTemplate(matchingDiletate, templateHorizontal, cv.TM_SQDIFF_NORMED)
-            min_val_horizontal, max_val_horizontal, min_loc_horizontal, max_loc_horizontal = cv.minMaxLoc(horizontalResult)
+            min_val_horizontal = np.min(horizontalResult)
+            # min_val_horizontal = np.min(horizontalResult)
+            # for i in matchingResult:
+            #     print(i)
+
+            # for i in horizontalResult:
+            #     print(i)
             # Matching result center point
-            print(f"""Lot {counter}""")
-            print("Matching: "+ str(min_val))
-            print("Matching horizontal: "+ str(min_val_horizontal))
+            # print(f"""Lot {counter}""")
+            # print("Matching: "+ str(min_val))
+            # print("Matching horizontal: "+ str(min_val_horizontal))
 
             color = None
             edges_average = np.mean(edges)
-            print("Edges average: " + str(edges_average))
+            # print("Edges average: " + str(edges_average))
             if edges_average > 23:
                     parking_classificator.append(1)
-                    print("Car detected")
+                    # print("Car detected")
                     color = (0, 0, 255)
             elif min_val > 0.8:
                 parking_classificator.append(1)
-                print("Car detected")
+                # print("Car detected")
                 color = (0, 0, 255)
             elif min_val_horizontal > 0.8:
                 parking_classificator.append(1)
-                print("Car detected")
+                # print("Car detected")
                 color = (0, 0, 255)
             elif min_val > 0.308 and edges_average > 10 and min_val_horizontal > 0.3208:
                 parking_classificator.append(1)
-                print("Car detected")
+                # print("Car detected")
                 color = (0, 0, 255)
             elif min_val > 0.17 and min_val_horizontal > 0.322 and edges_average > 21:
                 parking_classificator.append(1)
-                print("Car detected")
+                # print("Car detected")
                 color = (0, 0, 255)
             elif min_val > 0.33 and min_val_horizontal > 0.29 and edges_average > 17:
                 parking_classificator.append(1)
-                print("Car detected")
+                # print("Car detected")
                 color = (0, 0, 255)
             elif min_val > 0.269 and min_val_horizontal > 0.24 and edges_average > 20:
                 parking_classificator.append(1)
-                print("Car detected")
+                # print("Car detected")
                 color = (0, 0, 255)
             # elif edges_average > 5 and min_val > 0.5:
             #     parking_classificator.append(1)
@@ -178,15 +268,12 @@ def main(argv):
             #     color = (0, 0, 255)
             else:
                 parking_classificator.append(0)
-                print("Empty place detected")
+                # print("Empty place detected")
                 color = (0, 255, 0)
-            print(edges_average)
-            #put circle in the center of the parking place c has all coordinates in array
-            # c[0] = x1, c[1] = y1, c[2] = x2, c[3] = y2, c[4] = x3, c[5] = y3, c[6] = x4, c[7] = y4
+            # print(edges_average)
             center = (int(c[0]), int(c[1]))
             points = [(int(c[i]), int(c[i+1])) for i in range(0, len(c), 2)]
 
-# Calculate the average of x and y coordinates to find the center
             center_x = sum(point[0] for point in points) / len(points)
             center_y = sum(point[1] for point in points) / len(points)
             center = (int(center_x), int(center_y))
@@ -195,17 +282,13 @@ def main(argv):
             cv.putText(image, str(counter), (textCenterX + 10, textCenterY + 10), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
             counter += 1
             cv.imshow(wondow4, edges)
-            # cv.imshow(window3, diletate)
             cv.imshow(window2, one_image_car)
             cv.imshow(windowName, image)
-            # if counter == 5 + 1 or counter == 16 + 1:
-            #     cv.waitKey(0)
-            # if counter == 53:
-                # cv.waitKey(0)
-            # if cv.waitKey(0) == ord('q'):
-            #     break
-            #write text to image with 1 or 0
-            # cv.putText(image, str(parking_classificator[-1]), bottomLeftOrigin=(c[0], c[1]))
-            cv.waitKey(0)
+        print("********************************************************")
+        print("Results for: " + result_name)
+        getAccuracy(parking_classificator, result_name)
+        f1_score_binary(parking_classificator, result_name)
+        parking_classificator.clear()
+        cv.waitKey(0)
 if __name__ == "__main__":
    main(sys.argv[1:])
