@@ -80,8 +80,8 @@ def getAccuracy(values, results):
     for i in range(len(values)):
         if values[i] == res[i]:
             correctCounter += 1
-        
-    print(f"Accuracy: {correctCounter/len(values)}")
+
+    return correctCounter / len(values)
 
 
 
@@ -109,13 +109,12 @@ def f1_score_binary(values, results):
         return
     precision = true_positives / (true_positives + false_positives)
     recall = true_positives / (true_positives + false_negatives)
-    
+
     if precision + recall == 0:
         return 0
     fScore = 2 * (precision * recall) / (precision + recall)
 
-    print(f"Precision F-score: {precision}")
-
+    return fScore
 
 import numpy as np
 
@@ -137,10 +136,11 @@ def template_matching_sqdiff_normed(image, template):
             diff = (roi - template) ** 2
 
             # Calculate the normalized squared difference
-            normed_score = np.sum(diff) / (th * tw)
+            normed_score = (np.sum(diff) / (th * tw)) / 1000
 
             # Store the result in the result matrix
             result[y, x] = normed_score
+
 
     return result
 
@@ -208,14 +208,17 @@ def main(argv):
 
             template = cv.imread('templates/template9.png', 0)
             template = cv.resize(template, (5, 45))
-            matchingResult = cv.matchTemplate(matchingDiletate, template, cv.TM_SQDIFF_NORMED)            
+            # matchingResult = template_matching_sqdiff_normed(matchingDiletate, template)
+            matchingResult = cv.matchTemplate(matchingDiletate, template, cv.TM_SQDIFF_NORMED)
+
             cv.imshow(window7, matchingResult)
-            # min_val = np.min(matchingResult)
             min_val = np.min(matchingResult)
             templateHorizontal = cv.imread('templates/template10.png', 0)
             templateHorizontal = cv.resize(templateHorizontal, (45, 30))
+            # horizontalResult = template_matching_sqdiff_normed(matchingDiletate, templateHorizontal)
             horizontalResult = cv.matchTemplate(matchingDiletate, templateHorizontal, cv.TM_SQDIFF_NORMED)
             min_val_horizontal = np.min(horizontalResult)
+            # print(min_val_horizontal)
             # min_val_horizontal = np.min(horizontalResult)
             # for i in matchingResult:
             #     print(i)
@@ -286,8 +289,11 @@ def main(argv):
             cv.imshow(windowName, image)
         print("********************************************************")
         print("Results for: " + result_name)
-        getAccuracy(parking_classificator, result_name)
-        f1_score_binary(parking_classificator, result_name)
+        accuracy = getAccuracy(parking_classificator, result_name)
+        fscore =  f1_score_binary(parking_classificator, result_name)
+        cv.putText(image, f"Accuracy: {accuracy}", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        cv.putText(image, f"F-score: {fscore}", (10, 60), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        cv.imshow(windowName, image)
         parking_classificator.clear()
         cv.waitKey(0)
 if __name__ == "__main__":
