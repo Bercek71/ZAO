@@ -69,7 +69,6 @@ def four_point_transform(image, one_c):
     return warped
 
 def getTotalAccuracy(values, res):
-    # Compare values and results
     totalCounter = 0
     correctCounter = 0
     for i in range(len(values)):
@@ -108,7 +107,6 @@ def getTotalFScoreBinary(values, res):
     return fScore
 
 def getAccuracy(values, res):
-    # Compare values and results
     correctCounter = 0
     for i in range(len(values)):
         if values[i] == res[i]:
