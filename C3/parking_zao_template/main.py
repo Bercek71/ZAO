@@ -68,13 +68,46 @@ def four_point_transform(image, one_c):
     # return the warped image
     return warped
 
-def getAccuracy(values, results):
-    # Open file
-    file = open(results, 'r')
-    lines = file.readlines()
-    # Get values
-    # values = [int(x) for x in values]
-    res = [int(x) for x in lines]
+def getTotalAccuracy(values, res):
+    # Compare values and results
+    totalCounter = 0
+    correctCounter = 0
+    for i in range(len(values)):
+        for j in range(len(values[i])):
+            if values[i][j] == res[i][j]:
+                correctCounter += 1
+            totalCounter += 1
+    return correctCounter / totalCounter
+
+
+def getTotalFScoreBinary(values, res):
+    true_positives = 0
+    false_positives = 0
+    false_negatives = 0
+    for i in range(len(values)):
+        for j in range(len(values[i])):
+            if values[i][j] == res[i][j]:
+                if values[i][j] == 1:
+                    true_positives += 1
+            else:
+                if values[i][j] == 0 and res[i][j] == 1:
+                    false_negatives += 1
+                elif values[i][j] == 1 and res[i][j] == 0:
+                    false_positives += 1
+
+    if true_positives == 0:
+        print(f"Precision F-score: Undefined")
+        return
+    precision = true_positives / (true_positives + false_positives)
+    recall = true_positives / (true_positives + false_negatives)
+
+    if precision + recall == 0:
+        return 0
+    fScore = 2 * (precision * recall) / (precision + recall)
+
+    return fScore
+
+def getAccuracy(values, res):
     # Compare values and results
     correctCounter = 0
     for i in range(len(values)):
@@ -85,12 +118,7 @@ def getAccuracy(values, results):
 
 
 
-def f1_score_binary(values, results):
-    file = open(results, 'r')
-    lines = file.readlines()
-    # Get values
-    # values = [int(x) for x in values]
-    res = [int(x) for x in lines]
+def getFScoreBinary(values, res):
     true_positives = 0
     false_positives = 0
     false_negatives = 0
@@ -119,26 +147,16 @@ def f1_score_binary(values, results):
 import numpy as np
 
 def template_matching_sqdiff_normed(image, template):
-    # Get dimensions of the image and template
     ih, iw = image.shape[:2]
     th, tw = template.shape[:2]
 
-    # Create a result matrix to store the matching scores
     result = np.zeros((ih - th + 1, iw - tw + 1), dtype=np.float32)
 
-    # Iterate over the image and perform template matching
     for y in range(ih - th + 1):
         for x in range(iw - tw + 1):
-            # Extract the region of interest from the image
             roi = image[y:y+th, x:x+tw]
-
-            # Calculate squared difference between the template and roi
             diff = (roi - template) ** 2
-
-            # Calculate the normalized squared difference
             normed_score = (np.sum(diff) / (th * tw)) / 1000
-
-            # Store the result in the result matrix
             result[y, x] = normed_score
 
 
@@ -179,9 +197,9 @@ def main(argv):
     cv.namedWindow(window6, cv.WINDOW_NORMAL)
     window7 = "Matching Horizontal Image"
     cv.namedWindow(window7, cv.WINDOW_NORMAL)
-    parking_classificator = []
-
+    totalPredictedResults = []
     for img_name, result_name in test_images:
+        parking_classificator_results = []
         print(img_name)
         image = cv.imread(img_name, cv.IMREAD_COLOR)
         image_blackandWhite = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
@@ -234,31 +252,31 @@ def main(argv):
             edges_average = np.mean(edges)
             # print("Edges average: " + str(edges_average))
             if edges_average > 23:
-                    parking_classificator.append(1)
+                    parking_classificator_results.append(1)
                     # print("Car detected")
                     color = (0, 0, 255)
             elif min_val > 0.8:
-                parking_classificator.append(1)
+                parking_classificator_results.append(1)
                 # print("Car detected")
                 color = (0, 0, 255)
             elif min_val_horizontal > 0.8:
-                parking_classificator.append(1)
+                parking_classificator_results.append(1)
                 # print("Car detected")
                 color = (0, 0, 255)
             elif min_val > 0.308 and edges_average > 10 and min_val_horizontal > 0.3208:
-                parking_classificator.append(1)
+                parking_classificator_results.append(1)
                 # print("Car detected")
                 color = (0, 0, 255)
             elif min_val > 0.17 and min_val_horizontal > 0.322 and edges_average > 21:
-                parking_classificator.append(1)
+                parking_classificator_results.append(1)
                 # print("Car detected")
                 color = (0, 0, 255)
             elif min_val > 0.33 and min_val_horizontal > 0.29 and edges_average > 17:
-                parking_classificator.append(1)
+                parking_classificator_results.append(1)
                 # print("Car detected")
                 color = (0, 0, 255)
             elif min_val > 0.269 and min_val_horizontal > 0.24 and edges_average > 20:
-                parking_classificator.append(1)
+                parking_classificator_results.append(1)
                 # print("Car detected")
                 color = (0, 0, 255)
             # elif edges_average > 5 and min_val > 0.5:
@@ -270,7 +288,7 @@ def main(argv):
             #     print("Car detected")
             #     color = (0, 0, 255)
             else:
-                parking_classificator.append(0)
+                parking_classificator_results.append(0)
                 # print("Empty place detected")
                 color = (0, 255, 0)
             # print(edges_average)
@@ -289,12 +307,31 @@ def main(argv):
             cv.imshow(windowName, image)
         print("********************************************************")
         print("Results for: " + result_name)
-        accuracy = getAccuracy(parking_classificator, result_name)
-        fscore =  f1_score_binary(parking_classificator, result_name)
+
+
+        file = open(result_name, 'r')
+        lines = file.readlines()
+        res = [int(x) for x in lines]
+        accuracy = getAccuracy(parking_classificator_results, res)
+        fscore =  getFScoreBinary(parking_classificator_results, res)
+        
         cv.putText(image, f"Accuracy: {accuracy}", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         cv.putText(image, f"F-score: {fscore}", (10, 60), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         cv.imshow(windowName, image)
-        parking_classificator.clear()
+        totalPredictedResults.append(parking_classificator_results)
+        # parking_classificator_results .clear()
         cv.waitKey(0)
+
+    totalResults = []
+    for _, resultName in test_images:
+        file = open(resultName, 'r')
+        lines = file.readlines()
+        res = [int(x) for x in lines]
+        totalResults.append(res)
+    print("********************************************************")
+    print("Total accuracy: " + str(getTotalAccuracy(totalResults, totalPredictedResults)))
+    print("Total F-score: " + str(getTotalFScoreBinary(totalResults, totalPredictedResults)))
+    print("********************************************************")
+
 if __name__ == "__main__":
    main(sys.argv[1:])
