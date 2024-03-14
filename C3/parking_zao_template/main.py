@@ -142,22 +142,18 @@ def getFScoreBinary(values, res):
 
     return fScore
 
-import numpy as np
+def templateMatchingSqdiffNormed(image, template):
+    imageHeight, imageWidth = image.shape[:2]
+    temlateHeight, templateWidth = template.shape[:2]
 
-def template_matching_sqdiff_normed(image, template):
-    ih, iw = image.shape[:2]
-    th, tw = template.shape[:2]
+    result = np.zeros((imageHeight - temlateHeight + 1, imageWidth - templateWidth + 1), dtype=np.float32)
 
-    result = np.zeros((ih - th + 1, iw - tw + 1), dtype=np.float32)
-
-    for y in range(ih - th + 1):
-        for x in range(iw - tw + 1):
-            roi = image[y:y+th, x:x+tw]
+    for y in range(imageHeight - temlateHeight + 1):
+        for x in range(imageWidth - templateWidth + 1):
+            roi = image[y:y+temlateHeight, x:x+templateWidth]
             diff = (roi - template) ** 2
-            normed_score = (np.sum(diff) / (th * tw)) / 1000
+            normed_score = (np.sum(diff) / (temlateHeight * templateWidth)) / 1000
             result[y, x] = normed_score
-
-
     return result
 
 
