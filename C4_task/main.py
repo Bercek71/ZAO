@@ -199,108 +199,133 @@ def main(argv):
         image_blackandWhite = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
         # cv.imshow(windowName, image)
         counter = 1
+        avg = np.mean(image)
         for c in pkm_coordinates:
             one_image = four_point_transform(image_blackandWhite, c)
             one_image_car = cv.resize(one_image, (45, 45))
-            kernel =  cv.getStructuringElement(cv.MORPH_RECT, (8, 8))
-            kernelErode = cv.getStructuringElement(cv.MORPH_CROSS, (5, 5))
-            erode = cv.erode(one_image_car, kernelErode, iterations=1)
-            diletated = cv.dilate(one_image_car, kernel, iterations=1)
-            erode = cv.GaussianBlur(one_image_car, (3, 3), 0)
-            edges = cv.Canny(erode, 120, 200)
-            cv.imshow(window5, erode)
+            if avg > 100:
+                kernel =  cv.getStructuringElement(cv.MORPH_RECT, (8, 8))
+                kernelErode = cv.getStructuringElement(cv.MORPH_CROSS, (5, 5))
+                erode = cv.erode(one_image_car, kernelErode, iterations=1)
+                erode = cv.GaussianBlur(one_image_car, (3, 3), 0)
+                edges = cv.Canny(erode, 120, 200)
+                # cv.imshow(window5, erode)
 
-            matchingKernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (18, 17))
-            matchingErode = cv.erode(one_image_car, matchingKernel, iterations=2)
-            matchingDiletate = cv.dilate(matchingErode, matchingKernel, iterations=1)
-            cv.imshow(window6, matchingDiletate)
+                matchingKernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (18, 17))
+                matchingErode = cv.erode(one_image_car, matchingKernel, iterations=2)
+                matchingDiletate = cv.dilate(matchingErode, matchingKernel, iterations=1)
+                # cv.imshow(window6, matchingDiletate)
 
 
-            # diletate = cv.dilate(erode, kernel, iterations=1)
+                # diletate = cv.dilate(erode, kernel, iterations=1)
 
-            template = cv.imread('templates/template9.png', 0)
-            template = cv.resize(template, (5, 45))
-            # matchingResult = template_matching_sqdiff_normed(matchingDiletate, template)
-            matchingResult = cv.matchTemplate(matchingDiletate, template, cv.TM_SQDIFF_NORMED)
+                template = cv.imread('templates/template9.png', 0)
+                template = cv.resize(template, (5, 45))
+                # matchingResult = template_matching_sqdiff_normed(matchingDiletate, template)
+                matchingResult = cv.matchTemplate(matchingDiletate, template, cv.TM_SQDIFF_NORMED)
 
-            cv.imshow(window7, matchingResult)
-            min_val = np.min(matchingResult)
-            templateHorizontal = cv.imread('templates/template10.png', 0)
-            templateHorizontal = cv.resize(templateHorizontal, (45, 30))
-            # horizontalResult = template_matching_sqdiff_normed(matchingDiletate, templateHorizontal)
-            horizontalResult = cv.matchTemplate(matchingDiletate, templateHorizontal, cv.TM_SQDIFF_NORMED)
-            min_val_horizontal = np.min(horizontalResult)
-            # print(min_val_horizontal)
-            # min_val_horizontal = np.min(horizontalResult)
-            # for i in matchingResult:
-            #     print(i)
+                # cv.imshow(window7, matchingResult)
+                min_val = np.min(matchingResult)
+                templateHorizontal = cv.imread('templates/template10.png', 0)
+                templateHorizontal = cv.resize(templateHorizontal, (45, 30))
+                # horizontalResult = template_matching_sqdiff_normed(matchingDiletate, templateHorizontal)
+                horizontalResult = cv.matchTemplate(matchingDiletate, templateHorizontal, cv.TM_SQDIFF_NORMED)
+                min_val_horizontal = np.min(horizontalResult)
 
-            # for i in horizontalResult:
-            #     print(i)
-            # Matching result center point
-            # print(f"""Lot {counter}""")
-            # print("Matching: "+ str(min_val))
-            # print("Matching horizontal: "+ str(min_val_horizontal))
-
-            color = None
-            edges_average = np.mean(edges)
-            # print("Edges average: " + str(edges_average))
-            if edges_average > 23:
+                color = None
+                edges_average = np.mean(edges)
+                # print("Edges average: " + str(edges_average))
+                if edges_average > 23:
+                        parking_classificator_results.append(1)
+                        # print("Car detected")
+                        color = (0, 0, 255)
+                elif min_val > 0.8:
                     parking_classificator_results.append(1)
                     # print("Car detected")
                     color = (0, 0, 255)
-            elif min_val > 0.8:
-                parking_classificator_results.append(1)
-                # print("Car detected")
-                color = (0, 0, 255)
-            elif min_val_horizontal > 0.8:
-                parking_classificator_results.append(1)
-                # print("Car detected")
-                color = (0, 0, 255)
-            elif min_val > 0.308 and edges_average > 10 and min_val_horizontal > 0.3208:
-                parking_classificator_results.append(1)
-                # print("Car detected")
-                color = (0, 0, 255)
-            elif min_val > 0.17 and min_val_horizontal > 0.322 and edges_average > 21:
-                parking_classificator_results.append(1)
-                # print("Car detected")
-                color = (0, 0, 255)
-            elif min_val > 0.33 and min_val_horizontal > 0.29 and edges_average > 17:
-                parking_classificator_results.append(1)
-                # print("Car detected")
-                color = (0, 0, 255)
-            elif min_val > 0.269 and min_val_horizontal > 0.24 and edges_average > 20:
-                parking_classificator_results.append(1)
-                # print("Car detected")
-                color = (0, 0, 255)
-            # elif edges_average > 5 and min_val > 0.5:
-            #     parking_classificator.append(1)
-            #     print("Car detected")
-            #     color = (0, 0, 255)
-            # elif min_val > 0.07 and edges_average > 18.7:
-            #     parking_classificator.append(1)
-            #     print("Car detected")
-            #     color = (0, 0, 255)
-            else:
-                parking_classificator_results.append(0)
-                # print("Empty place detected")
-                color = (0, 255, 0)
-            # print(edges_average)
-            center = (int(c[0]), int(c[1]))
-            points = [(int(c[i]), int(c[i+1])) for i in range(0, len(c), 2)]
+                elif min_val_horizontal > 0.8:
+                    parking_classificator_results.append(1)
+                    # print("Car detected")
+                    color = (0, 0, 255)
+                elif min_val > 0.308 and edges_average > 10 and min_val_horizontal > 0.3208:
+                    parking_classificator_results.append(1)
+                    # print("Car detected")
+                    color = (0, 0, 255)
+                elif min_val > 0.17 and min_val_horizontal > 0.322 and edges_average > 21:
+                    parking_classificator_results.append(1)
+                    # print("Car detected")
+                    color = (0, 0, 255)
+                elif min_val > 0.33 and min_val_horizontal > 0.29 and edges_average > 17:
+                    parking_classificator_results.append(1)
+                    # print("Car detected")
+                    color = (0, 0, 255)
+                elif min_val > 0.269 and min_val_horizontal > 0.24 and edges_average > 20:
+                    parking_classificator_results.append(1)
+                    # print("Car detected")
+                    color = (0, 0, 255)
+                else:
+                    parking_classificator_results.append(0)
+                    # print("Empty place detected")
+                    color = (0, 255, 0)
+                # print(edges_average)
+                center = (int(c[0]), int(c[1]))
+                points = [(int(c[i]), int(c[i+1])) for i in range(0, len(c), 2)]
 
-            center_x = sum(point[0] for point in points) / len(points)
-            center_y = sum(point[1] for point in points) / len(points)
-            center = (int(center_x), int(center_y))
-            cv.circle(image, center, 10, color, -1)
-            (textCenterX, textCenterY) = center
-            cv.putText(image, str(counter), (textCenterX + 10, textCenterY + 10), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-            counter += 1
-            cv.imshow(wondow4, edges)
-            cv.imshow(window2, one_image_car)
-            cv.imshow(windowName, image)
+                center_x = sum(point[0] for point in points) / len(points)
+                center_y = sum(point[1] for point in points) / len(points)
+                center = (int(center_x), int(center_y))
+                cv.circle(image, center, 10, color, -1)
+                (textCenterX, textCenterY) = center
+                cv.putText(image, str(counter), (textCenterX + 10, textCenterY + 10), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                counter += 1
+                cv.imshow(wondow4, edges)
+                cv.imshow(window2, one_image_car)
+                cv.imshow(windowName, image)
+                print("day")
+            else:
+                kernel = cv.getStructuringElement(cv.MORPH_RECT, (8, 8))
+                kernelErode = cv.getStructuringElement(cv.MORPH_CROSS, (5, 5))
+                # erode = cv.erode(one_image_car, kernelErode, iterations=1)
+                # erode = cv.GaussianBlur(one_image_car, (3, 3), 0)
+                edges = cv.Canny(one_image_car, 100, 200)
+                cv.imshow(window5, erode)
+
+                # diletate = cv.dilate(erode, kernel, iterations=1)
+
+
+                cv.imshow(window7, matchingResult)
+
+                color = None
+                edges_average = np.mean(edges)
+                print("Edges average: " + str(edges_average))
+                if edges_average > 10:
+                        parking_classificator_results.append(1)
+                        # print("Car detected")
+                        color = (0, 0, 255)
+                else:
+                    parking_classificator_results.append(0)
+                    # print("Empty place detected")
+                    color = (0, 255, 0)
+                # print(edges_average)
+                center = (int(c[0]), int(c[1]))
+                points = [(int(c[i]), int(c[i+1])) for i in range(0, len(c), 2)]
+
+                center_x = sum(point[0] for point in points) / len(points)
+                center_y = sum(point[1] for point in points) / len(points)
+                center = (int(center_x), int(center_y))
+                cv.circle(image, center, 10, color, -1)
+                (textCenterX, textCenterY) = center
+                cv.putText(image, str(counter), (textCenterX + 10, textCenterY + 10), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                counter += 1
+                cv.imshow(wondow4, edges)
+                cv.imshow(window2, one_image_car)
+        # cv.waitKey(0)
+
+
         print("********************************************************")
         print("Results for: " + result_name)
+        print("Average: " + str(avg))
+
 
 
         file = open(result_name, 'r')
