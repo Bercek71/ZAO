@@ -288,11 +288,10 @@ def main(argv):
                 # erode = cv.erode(one_image_car, kernelErode, iterations=1)
                 # erode = cv.GaussianBlur(one_image_car, (3, 3), 0)
                 edges = betterSobel(one_image_car, 100, 50)
-
                 # diletate = cv.dilate(erode, kernel, iterations=1)
 
 
-                cv.imshow(window7, matchingResult)
+                cv.imshow(window7, edges)
 
                 color = None
                 edges_average = np.mean(edges)
@@ -339,7 +338,7 @@ def main(argv):
         cv.imshow(windowName, image)
         totalPredictedResults.append(parking_classificator_results)
         # parking_classificator_results .clear()
-        # cv.waitKey(0)
+        cv.waitKey(0)
 
     totalResults = []
     for _, resultName in test_images:
