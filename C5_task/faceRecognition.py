@@ -36,7 +36,7 @@ while True:
         cv.rectangle(frame, d, (0, 255, 0), 2)
         cv.putText(frame, face_side + " face", (d[0], d[1] - 5), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv.LINE_AA)
         face = frame[d[1]:d[1]+d[3], d[0]:d[0]+d[2]]
-        eyes, something, levelW = cl_eqes.detectMultiScale3(face, 1.2, 4, minSize=(80, 80), outputRejectLevels=True)
+        eyes, _, levelW = cl_eqes.detectMultiScale3(face, 1.2, 4, minSize=(80, 80), outputRejectLevels=True)
         # print(f"""2: {something2}""")
         # print(f"""1: {something}""")
         toRemove = []
