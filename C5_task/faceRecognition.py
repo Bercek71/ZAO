@@ -46,6 +46,7 @@ while True:
                 toRemove.append(i)
         eyes = np.delete(eyes, toRemove, axis=0)
         min_vals = []
+        circles = None
         for e in eyes:
             cv.rectangle(face, e, (0, 0, 255), 4)
             cv.rectangle(face, e, (0, 255, 0), 2)
@@ -61,18 +62,18 @@ while True:
             # means.append(-mean)
 
             # print("Threshold: ", np.mean(frame_threshold))
-            eyesFrame = cv.cvtColor(eyesFrame, cv.COLOR_BGR2GRAY)
-            eyesFrame = cv.equalizeHist(eyesFrame)
-            eyesFrame = cv.medianBlur(eyesFrame, 5)
-            ret, eyesFrame = cv.threshold(eyesFrame, 40, 255, cv.THRESH_BINARY)
-            eyesFrame = cv.bitwise_not(eyesFrame)
-            (cnt, hie) = cv.findContours(eyesFrame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+            eyeFrame = cv.cvtColor(eyesFrame, cv.COLOR_BGR2GRAY)
+            eyeFrame = cv.equalizeHist(eyeFrame)
+            eyeFrame = cv.medianBlur(eyeFrame, 5)
+            ret, eyeFrame = cv.threshold(eyeFrame, 40, 255, cv.THRESH_BINARY)
+            eyeFrame = cv.bitwise_not(eyeFrame)
+            (cnt, hie) = cv.findContours(eyeFrame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
             # move contours to the right position in frame
             for c in cnt:
                 c[:, :, 0] += e[0] + d[0]
                 c[:, :, 1] += e[1] + d[1]
-            eyesFrame = cv.resize(eyesFrame, (80, 50))
-            templateMatching = cv.matchTemplate(eyesFrame, template, cv.TM_SQDIFF_NORMED)
+            eyeFrame = cv.resize(eyeFrame, (80, 50))
+            templateMatching = cv.matchTemplate(eyeFrame, template, cv.TM_SQDIFF_NORMED)
             min_val, max_val, min_loc, max_loc = cv.minMaxLoc(templateMatching)
             min_vals.append(min_val)
             print("Contours: ", cnt)
@@ -80,9 +81,21 @@ while True:
             print("Template matching: ", min_val)
                 
             cv.drawContours(frame, cnt, -1, (0, 255, 0), 3)
+            eyeFrame = cv.cvtColor(eyesFrame, cv.COLOR_BGR2GRAY)    
+            circles = cv.HoughCircles(eyeFrame, cv.HOUGH_GRADIENT, 1, 20, param1=100, param2=17, minRadius=0, maxRadius=25)
+ 
+            if circles is not None:
+                circles = np.uint16(np.around(circles))
+                for i in circles[0, :]:
+                    center = (i[0], i[1])
+                # circle center
+                    cv.circle(eyesFrame, center, 1, (0, 100, 100), 3)
+                # circle outline
+                    radius = i[2]
+                    cv.circle(eyesFrame, center, radius, (255, 0, 255), 3)
             # eyesFrame = cv.Canny(eyesFrame, 100, 200)
             # eyesFrame = cv.dilate(eyesFrame, (3, 3), iterations=3)
-            # cv.imshow(window_name_threshold, frame_threshold)
+            # cv.imshow(window_name_threshold, circles)
             cv.imshow(window_name_eyes, eyesFrame)
             cv.imshow(window_name, frame)
         mouth , _, lvlWeight = cl_smile.detectMultiScale3(face, 1.2, 4, minSize=(200, 200), outputRejectLevels=True)
@@ -91,7 +104,7 @@ while True:
         print(min_vals)
         for min_val in min_vals:
             print(min_val)
-            if min_val < 0.9:
+            if min_val < 0.9 or circles is not None:
                 isOpen = True
                 break
 
