@@ -338,7 +338,7 @@ def main(argv):
         cv.imshow(windowName, image)
         totalPredictedResults.append(parking_classificator_results)
         # parking_classificator_results .clear()
-        cv.waitKey(0)
+        # cv.waitKey(0)
 
     totalResults = []
     for _, resultName in test_images:
